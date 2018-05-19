@@ -1,3 +1,6 @@
 # Intellij IDEA
 /.idea/
 whisper-cli-chat.iml
+
+# node
+/node_modules/
