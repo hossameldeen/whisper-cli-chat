@@ -17,11 +17,7 @@ Needless to say: were I in dire need of the job, I may have accepted doing the t
 
 Still no main code written.
 
-To run test code: from the project root, run:  
-
-```
-bin/test.sh
-```
+To run test code: from the project root, run: `bin/test.sh`
 
 ## Troubleshooting
 
