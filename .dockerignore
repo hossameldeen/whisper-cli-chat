@@ -1,0 +1,4 @@
+# I wish I could put all unneeded files here. However, this'd mean copy/pasting .gitignore. Instead, I'm only putting
+# the ones expensive to copy.
+
+node_modules/

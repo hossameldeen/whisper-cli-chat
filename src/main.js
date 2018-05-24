@@ -1,3 +1,6 @@
+// Was trying stuff out in `main.js` directly. Will move trying stuff out in test/
+// Also, was using `docker`. Will start assuming `geth` & `wnode` are installed
+
 (async function() {
 
   await startNode()
