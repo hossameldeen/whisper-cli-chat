@@ -11,10 +11,14 @@
 
 
 # First stage: Build Geth & Wnode in a stock Go builder container
-FROM golang:1.10-alpine as geth-and-wnode-builder
+FROM golang:1.10-stretch as geth-and-wnode-builder
 
 # Added git for building the docker image locally
-RUN apk add --no-cache make gcc musl-dev linux-headers git
+RUN apt-get update && apt-get install -y \
+    gcc \
+    git \
+    make \
+    musl-dev
 
 RUN git clone --depth 1 https://github.com/ethereum/go-ethereum.git /go-ethereum
 
@@ -24,7 +28,7 @@ RUN cd /go-ethereum && make all
 
 # Second stage: Copy wnode & geth from the first stage & deploy the app in a nodejs image
 # using non-alpine version because seems like some packages need stuff like git & python
-FROM node:8.11.2
+FROM node:8.11.2-stretch
 
 # TODO: Installing ca-certificates because it was in `ethereum/go-client`. Don't know what it's for
 RUN apt-get update && apt-get install -y \

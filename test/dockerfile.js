@@ -8,7 +8,7 @@ const { spawn } = require('child_process')
 
 describe('generated docker image', function() {
   it('should contain geth & wnode in /usr/local/bin/', function(done) {
-    const ls = spawn('ls', ['-al', '/usr/local/bin/'])
+    const ls = spawn('ls', ['/usr/local/bin/'])
 
     let gethFound = false, wnodeFound = false
 
