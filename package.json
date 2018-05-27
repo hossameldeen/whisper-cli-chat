@@ -12,6 +12,8 @@
   },
   "devDependencies": {
     "chai": "*",
-    "mocha": "*"
+    "chai-as-promised": "*",
+    "mocha": "*",
+    "wait-port": "0.2.2"
   }
 }
