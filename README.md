@@ -24,3 +24,10 @@ To run test code: from the project root, run: `bin/test.sh`
 #### bin/test.sh Permission denied
 
 Run `chmod u+x bin/test.sh`
+
+## Credits
+
+Beside the libraries & tools used in code:
+
+- [wait-on](https://github.com/jeffbski/wait-on): for how to check for file existence & port listening.
+- [wait-until](https://www.npmjs.com/package/wait-until): for the idea of taking `interval` and `times` instead of `timeout`. Much simpler to implement.
