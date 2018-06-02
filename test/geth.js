@@ -12,9 +12,8 @@ chai.should()
 
 const Web3 = require('web3')
 const { spawn } = require('child_process')
-const net = require('net')
 
-const { stat } = require('fs')
+const { waitTillTrue, doesFileExist, isTcpPortListening, wait } = require('../src/utils.js')
 
 //setTimeout(function() {wtf.dump()}, 5000) // check the comment beside `const wtf = require('wtfnode')`
 
@@ -72,33 +71,5 @@ describe('geth', function() {
 
       reject("Couldn't kill the geth node :(. Run `docker ps` & terminate it manually")
     })
-  }
-
-  async function waitTillTrue(interval, times, anAsyncF) {
-    for (let i = 0; i < times; ++i) {
-      if (await anAsyncF())
-        return true
-      await wait(interval)
-    }
-    return false
-  }
-
-  function doesFileExist(filePath) {
-    return new Promise((resolve, _) => stat(filePath, (err, _) => resolve(!err)))
-  }
-
-  async function isTcpPortListening(host, port) {
-    return new Promise((resolve, _) => {
-      const conn = net.connect(port, host)
-        .on('error', () => resolve(false))
-        .on('connect', () => {
-          conn.end()
-          resolve(true)
-        })
-    })
-  }
-
-  async function wait(timeout) {
-    return new Promise((resolve, _) => setTimeout(resolve, timeout))
   }
 })
