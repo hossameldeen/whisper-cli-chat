@@ -17,7 +17,7 @@ const { waitTillTrue, doesFileExist, isTcpPortListening, wait } = require('../sr
 
 //setTimeout(function() {wtf.dump()}, 5000) // check the comment beside `const wtf = require('wtfnode')`
 
-describe('geth', function() {
+describe.skip('geth', function() {
 
   let testState = {}
   this.timeout(20000)

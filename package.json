@@ -4,16 +4,21 @@
   "repository": "https://github.com/hossameldeen/whisper-cli-chat.git",
   "author": "Hossam El-Deen <hossameldeenfci@gmail.com>",
   "scripts": {
+    "prepare": "patch-package",
     "start": "node main.js",
     "test": "mocha"
   },
   "dependencies": {
+    "dockerode": "^2.5.5",
+    "uuid": "^3.2.1",
     "web3": "1.0.0-beta.34"
   },
   "devDependencies": {
     "chai": "*",
     "chai-as-promised": "*",
     "mocha": "*",
+    "patch-package": "^5.1.1",
+    "postinstall-prepare": "^1.0.1",
     "wtfnode": "^0.7.0"
   }
 }
