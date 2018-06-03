@@ -1,3 +1,5 @@
+//const wtf = require('wtfnode') // uncomment this & the line containing `wtf.dump` for debugging code that doesn't exit
+
 // Full API:
 //   - http://www.chaijs.com/api/bdd/
 //   - https://www.npmjs.com/package/chai-as-promised
@@ -8,49 +10,43 @@ chai.use(chaiAsPromised)
 
 chai.should()
 
+const debug = require('debug')('whisperCliChat:shhTest')
+
 const Web3 = require('web3')
 const { spawn } = require('child_process')
 const net = require('net')
 
-const docker = new require('dockerode')()
-
-const { waitTillTrue, doesFileExist, isTcpPortListening, wait } = require('../src/utils.js')
+const Geth = require('../src/geth.js')
 
 
 describe('shh', function() {
 
   const N_NODES = 2
+  const TEST_TIMEOUT = 120000
 
   // Each item in gethNodes has {container: dockerode container, containerIP: string}
   let testState = {
-    gethNodes: []
+    geths: []
   }
 
-  this.timeout(40000)
+  this.timeout(TEST_TIMEOUT)
 
 
-  before('pull ethereum/client-go image', function(done) {
-    docker.pull('ethereum/client-go', (err, stream) => {
-      if (err) done(err)
-      else done()
-    })
+  beforeEach('start geth nodes in docker containers that will be automatically removed when stopped', async function() {
+//    setTimeout(function() {wtf.dump()}, TEST_TIMEOUT) // check the comment beside `const wtf = require('wtfnode')`
+
+    const gethInitPromises = [...Array(N_NODES)].map(_ => Geth.init())
+
+    testState.geths = await Promise.all(gethInitPromises)
   })
 
-
-  before('start geth nodes in docker containers that will be automatically removed when stopped', async function() {
-    const startNodePromises = [...Array(N_NODES)].map(_ => startNode())
-
-    testState.gethNodes = await Promise.all(startNodePromises)
-  })
-
-  after('stop, thus automatically-remove, and wait till removal of geth docker containers', async function() {
-    await Promise.all(testState.gethNodes.map(gethNode => gethNode.container.stop()))
-    await Promise.all(testState.gethNodes.map(gethNode => wait({condition: 'removed'})))
+  afterEach('stop, thus automatically-remove, and wait till removal of geth docker containers', async function() {
+    await Promise.all(testState.geths.map(geth => geth.destroy()))
   })
 
 
   it('.isListening() should return true since a geth started on ws://0.0.0.0:8546', async function() {
-    const shh = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethNodes[0].containerIP}:8546`)).shh
+    const shh = testState.geths[0].shh
 
     const isListening = await shh.net.isListening()
 
@@ -58,15 +54,15 @@ describe('shh', function() {
   })
 
 
-  it('.isListening() should throw no provider on ws://0.0.0.0:8547', async function() {
-    const shh = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethNodes[0].containerIP}:8547`)).shh
+  it('.isListening() should throw no provider on ws://localhost:8546', async function() {
+    const shh = new Web3(new Web3.providers.WebsocketProvider(`ws://localhost:8546`)).shh
 
     await shh.net.isListening().should.be.rejected
   })
 
 
   it('should get shh version', async function() {
-    const shh = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethNodes[0].containerIP}:8546`)).shh
+    const shh = testState.geths[0].shh
 
     const shhVersion = await shh.getVersion()
 
@@ -76,7 +72,7 @@ describe('shh', function() {
 
 
   it('should generate same SymKey for same password', async function() {
-    const shh = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethNodes[0].containerIP}:8546`)).shh
+    const shh = testState.geths[0].shh
 
     const pass1ID = await shh.generateSymKeyFromPassword('abc')
     const pass2ID = await shh.generateSymKeyFromPassword('abc')
@@ -88,7 +84,7 @@ describe('shh', function() {
 
 
   it('should save SymKey twice for same password', async function() {
-    const shh = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethNodes[0].containerIP}:8546`)).shh
+    const shh = testState.geths[0].shh
 
     const pass1ID = await shh.generateSymKeyFromPassword('abc')
     const pass2ID = await shh.generateSymKeyFromPassword('abc')
@@ -98,8 +94,8 @@ describe('shh', function() {
 
 
   it('should receive message with symmetric encryption', function(done) {
-    const web3 = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethNodes[0].containerIP}:8546`))
-    const shh = web3.shh
+    const web3 = testState.geths[0].web3
+    const shh = web3.shh  // same as testState.geths[0].shh
 
     shh.generateSymKeyFromPassword('abc', (err, symKeyID) => {
 
@@ -113,44 +109,17 @@ describe('shh', function() {
   })
 
 
-  it('should, WITH 2 DIFFERENT GETH NODES, receive message with symmetric encryption', function(done) {
-    let nodes = [...Array(2)].map(_ => {
-      const web3 = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethNodes[0].containerIP}:8546`))
-      const shh = web3.shh
-      return { web3: web3, shh: shh}
-    })
+  it.only('should, USING 2 DIFFERENT GETH NODES, receive message with symmetric encryption', function(done) {
+    testState.geths[0].shh.generateSymKeyFromPassword('abc', (err, symKeyID) => {
 
-    nodes[0].shh.generateSymKeyFromPassword('abc', (err, symKeyID) => {
-
-      nodes[0].shh.subscribe('messages', {symKeyID: symKeyID, topics: ['0x8a2f110d']}, (err, m, sub) => {
-        nodes[0].web3.utils.hexToUtf8(m.payload).should.equal('hiii')
+      testState.geths[0].shh.subscribe('messages', {symKeyID: symKeyID, topics: ['0x8a2f110d']}, (err, m, sub) => {
+        testState.geths[0].web3.utils.hexToUtf8(m.payload).should.equal('hiii')
         done()
       })
 
-      nodes[1].shh.generateSymKeyFromPassword('abc', (err, symKeyID) => {
-        nodes[1].shh.post({symKeyID: symKeyID, topic: '0x8a2f110d', payload: nodes[0].web3.utils.utf8ToHex('hiii'), powTime: 2, powTarget: 0.2})
+      testState.geths[1].shh.generateSymKeyFromPassword('abc', async (err, symKeyID) => {
+        await testState.geths[1].shh.post({symKeyID: symKeyID, topic: '0x8a2f110d', payload: testState.geths[1].web3.utils.utf8ToHex('hiii'), powTime: 2, powTarget: 0.2})
       })
     })
   })
-
-  async function startNode() {
-
-    const gethContainer = await docker.createContainer({
-      Image: 'ethereum/client-go',
-    // TODO: whisper doesn't need ethereum blockchain. Currently, I'm using --dev to be as lightweight as possible blockchain-wise
-    // The bootnodes belong to Status.im. See #4 on github's repo.
-      Cmd: ['--dev', '--shh', '--wsaddr', '0.0.0.0', '--ws', '--wsorigins', '*', '--bootnodes', 'enode://90cbf961c87eb837adc1300a0a6722a57134d843f0028a976d35dff387f101a2754842b6b694e50a01093808f304440d4d968bcbc599259e895ff26e5a1a17cf@51.15.194.39:30303', 'enode://fa63a6cc730468c5456eab365b2a7a68a166845423c8c9acc363e5f8c4699ff6d954e7ec58f13ae49568600cff9899561b54f6fc2b9923136cd7104911f31cce@163.172.168.202:30303'],
-      HostConfig: {
-        AutoRemove: true
-      }
-    })
-    await gethContainer.start()
-
-    const inspectOutput = await gethContainer.inspect()
-    const ip = inspectOutput.NetworkSettings.IPAddress
-
-    await waitTillTrue(1000, 10, () => isTcpPortListening(ip, 8546))
-
-    return { container: gethContainer, containerIP: ip }
-  }
 })

@@ -13,4 +13,7 @@ RUN yarn install
 # Note: This uses .dockerignore
 COPY . .
 
+# If you don't want logs, override with `docker run -e "DEBUG=" ...`
+ENV DEBUG whisperCliChat:*
+
 CMD ["yarn", "run", "start"]
