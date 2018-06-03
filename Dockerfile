@@ -5,6 +5,7 @@ WORKDIR /usr/src/app
 
 # TODO: How to make sure no-one is using `package-lock.json` instead of `yarn.lock`?
 COPY package.json yarn.lock ./
+COPY ./patches ./patches
 
 # `yarn install` instead of `yarn install --only=production` because I have only one image for dev/testing & production.
 RUN yarn install

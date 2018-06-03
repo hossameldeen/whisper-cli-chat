@@ -1,0 +1,18 @@
+patch-package
+--- a/node_modules/dockerode/lib/container.js
++++ b/node_modules/dockerode/lib/container.js
+@@ -756,11 +756,12 @@ Container.prototype.attach = function(opts, callback) {
+  * Waits for a container to end.
+  * @param  {Function} callback Callback
+  */
+-Container.prototype.wait = function(callback) {
++Container.prototype.wait = function(opts, callback) {
+   var self = this;
+   var optsf = {
+-    path: '/containers/' + this.id + '/wait',
++    path: '/containers/' + this.id + '/wait?',
+     method: 'POST',
++    options: opts,  // TODO: Most other function used `util.processArgs` for some reason
+     statusCodes: {
+       200: true,
+       400: 'bad parameter',

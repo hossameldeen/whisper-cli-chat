@@ -45,7 +45,7 @@ describe("The app's docker container or environment", function() {
   })
 
 
-  it.only('should auto-remove a container when using AutoRemove: true', async function() {
+  it('should auto-remove a container when using AutoRemove: true', async function() {
     const container = await docker.createContainer({
       Image: 'hello-world',
       HostConfig: {
@@ -54,11 +54,10 @@ describe("The app's docker container or environment", function() {
     })
 
     await container.start()
-    await container.wait()
+    await container.wait({condition: 'removed'})
 
     // all: to include non-running containers
     const matchingContainers = await docker.listContainers({all: true, filters: `{"id": ["${container.id}"]}`})
-    console.log(container.id, matchingContainers)
     matchingContainers.should.be.empty
   })
 })
