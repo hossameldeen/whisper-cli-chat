@@ -15,9 +15,17 @@ const docker = new require('dockerode')()
 const { doesFileExist, wait } = require('../src/utils.js')
 
 
-describe("The app's docker container or environment", function() {
+describe.only("The app's docker container or environment", function() {
 
   this.timeout(20000)
+
+
+  before('pull hello-world image', function(done) {
+    docker.pull('hello-world', (err, stream) => {
+      if (err) done(err)
+      else done()
+    })
+  })
 
 
   it('should have /var/run/docker.sock - Depends on caller to add `-v /var/run...`', async function() {
