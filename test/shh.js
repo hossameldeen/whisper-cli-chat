@@ -13,7 +13,6 @@ chai.should()
 const debug = require('debug')('whisperCliChat:shhTest')
 
 const Web3 = require('web3')
-const { spawn } = require('child_process')
 const net = require('net')
 
 const Geth = require('../src/geth.js')
@@ -22,14 +21,14 @@ const Geth = require('../src/geth.js')
 describe('shh', function() {
 
   const N_NODES = 2
-  const TEST_TIMEOUT = 120000
+  const TEST_TIMEOUT = 50000
+
+  this.timeout(TEST_TIMEOUT)
 
   // Each item in gethNodes has {container: dockerode container, containerIP: string}
   let testState = {
     geths: []
   }
-
-  this.timeout(TEST_TIMEOUT)
 
 
   beforeEach('start geth nodes in docker containers that will be automatically removed when stopped', async function() {
@@ -117,8 +116,8 @@ describe('shh', function() {
         done()
       })
 
-      testState.geths[1].shh.generateSymKeyFromPassword('abc', async (err, symKeyID) => {
-        await testState.geths[1].shh.post({symKeyID: symKeyID, topic: '0x8a2f110d', payload: testState.geths[1].web3.utils.utf8ToHex('hiii'), powTime: 2, powTarget: 0.2})
+      testState.geths[1].shh.generateSymKeyFromPassword('abc', (err, symKeyID) => {
+        testState.geths[1].shh.post({symKeyID: symKeyID, topic: '0x8a2f110d', payload: testState.geths[1].web3.utils.utf8ToHex('hiii'), powTime: 2, powTarget: 0.2})
       })
     })
   })

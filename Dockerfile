@@ -13,7 +13,8 @@ RUN yarn install
 # Note: This uses .dockerignore
 COPY . .
 
-# If you don't want logs, override with `docker run -e "DEBUG=" ...`
+# If you don't want logs, override with `docker run -e "DEBUG=" ...`. Or DEBUG=* if you want all logs from all libraries
+# that use npm's debug dependency
 ENV DEBUG whisperCliChat:*
 
 CMD ["yarn", "run", "start"]

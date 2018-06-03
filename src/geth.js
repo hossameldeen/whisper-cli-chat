@@ -21,6 +21,7 @@ class Geth {
       Image: 'ethereum/client-go',
     // TODO: whisper doesn't need ethereum blockchain. Currently, I'm using --dev to be as lightweight as possible blockchain-wise
     // The bootnodes belong to Status.im. See #4 on github's repo.
+//      Cmd: ['--testnet', '--shh', '--syncmode', 'light', '--wsaddr', '0.0.0.0', '--ws', '--wsorigins', '*', '--bootnodes', 'enode://f32efef2739e5135a0f9a80600b321ba4d13393a5f1d3f5f593df85919262f06c70bfa66d38507b9d79a91021f5e200ec20150592e72934c66248e87014c4317@167.99.209.79:30404', 'enode://90d7e7e34f588b44e1e07adfc6453b0d27946883420a012a837f6acfa66cbb28e6e8b5df3c0e26615ed82b32273453b1b003e4aa5c0d357ada30bde8f666db47@167.99.46.141:30404'],
       Cmd: ['--dev', '--shh', '--wsaddr', '0.0.0.0', '--ws', '--wsorigins', '*', '--bootnodes', 'enode://90cbf961c87eb837adc1300a0a6722a57134d843f0028a976d35dff387f101a2754842b6b694e50a01093808f304440d4d968bcbc599259e895ff26e5a1a17cf@51.15.194.39:30303', 'enode://fa63a6cc730468c5456eab365b2a7a68a166845423c8c9acc363e5f8c4699ff6d954e7ec58f13ae49568600cff9899561b54f6fc2b9923136cd7104911f31cce@163.172.168.202:30303'],
       HostConfig: {
         AutoRemove: true
