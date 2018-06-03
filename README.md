@@ -31,3 +31,4 @@ Beside the libraries & tools used in code:
 
 - [wait-on](https://github.com/jeffbski/wait-on): for how to check for file existence & port listening.
 - [wait-until](https://www.npmjs.com/package/wait-until): for the idea of taking `interval` and `times` instead of `timeout`. Much simpler to implement.
+- [elkrem-ethdenver-submission](https://github.com/iSsO/elkrem-ethdenver-submission): their `start-geth` script confirmed some chosen parameters & gave suggested values for others.
