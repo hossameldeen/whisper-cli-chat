@@ -37,13 +37,13 @@ describe('shh', function() {
   })
 
 
-  beforeEach('start geth nodes in docker containers that will be automatically removed when stopped', async function() {
+  before('start geth nodes in docker containers that will be automatically removed when stopped', async function() {
     const startNodePromises = [...Array(N_NODES)].map(_ => startNode())
 
     testState.gethNodes = await Promise.all(startNodePromises)
   })
 
-  afterEach('stop, thus automatically-remove, and wait till removal of geth docker containers', async function() {
+  after('stop, thus automatically-remove, and wait till removal of geth docker containers', async function() {
     await Promise.all(testState.gethNodes.map(gethNode => gethNode.container.stop()))
     await Promise.all(testState.gethNodes.map(gethNode => wait({condition: 'removed'})))
   })
