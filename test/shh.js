@@ -74,8 +74,8 @@ describe.only('shh', function() {
   })
 
 
-  it.skip('should get shh version', async function() {
-    const shh = new Web3(new Web3.providers.IpcProvider('/tmp/geth.ipc', net)).shh
+  it('should get shh version', async function() {
+    const shh = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethContainerIP}:8546`)).shh
 
     const shhVersion = await shh.getVersion()
 
@@ -84,8 +84,8 @@ describe.only('shh', function() {
   })
 
 
-  it.skip('should generate same SymKey for same password', async function() {
-    const shh = new Web3(new Web3.providers.IpcProvider('/tmp/geth.ipc', net)).shh
+  it('should generate same SymKey for same password', async function() {
+    const shh = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethContainerIP}:8546`)).shh
 
     const pass1ID = await shh.generateSymKeyFromPassword('abc')
     const pass2ID = await shh.generateSymKeyFromPassword('abc')
@@ -96,8 +96,8 @@ describe.only('shh', function() {
   })
 
 
-  it.skip('should save SymKey twice for same password', async function() {
-    const shh = new Web3(new Web3.providers.IpcProvider('/tmp/geth.ipc', net)).shh
+  it('should save SymKey twice for same password', async function() {
+    const shh = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethContainerIP}:8546`)).shh
 
     const pass1ID = await shh.generateSymKeyFromPassword('abc')
     const pass2ID = await shh.generateSymKeyFromPassword('abc')
@@ -106,8 +106,8 @@ describe.only('shh', function() {
   })
 
 
-  it.skip('should receive message with symmetric encryption', function(done) {
-    const web3 = new Web3(new Web3.providers.IpcProvider('/tmp/geth.ipc', net))
+  it('should receive message with symmetric encryption', function(done) {
+    const web3 = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethContainerIP}:8546`))
     const shh = web3.shh
 
     shh.generateSymKeyFromPassword('abc', (err, symKeyID) => {
