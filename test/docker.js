@@ -15,7 +15,7 @@ const docker = new require('dockerode')()
 const { doesFileExist, wait } = require('../src/utils.js')
 
 
-describe.only("The app's docker container or environment", function() {
+describe("The app's docker container or environment", function() {
 
   this.timeout(20000)
 
