@@ -17,10 +17,16 @@ const docker = new require('dockerode')()
 const { waitTillTrue, doesFileExist, isTcpPortListening, wait } = require('../src/utils.js')
 
 
-describe.only('shh', function() {
+describe('shh', function() {
 
-  let testState = {}
-  this.timeout(30000)
+  const N_NODES = 2
+
+  // Each item in gethNodes has {container: dockerode container, containerIP: string}
+  let testState = {
+    gethNodes: []
+  }
+
+  this.timeout(40000)
 
 
   before('pull ethereum/client-go image', function(done) {
@@ -31,7 +37,104 @@ describe.only('shh', function() {
   })
 
 
-  beforeEach('start geth node in a docker container that will be automatically removed when stopped', async function() {
+  beforeEach('start geth nodes in docker containers that will be automatically removed when stopped', async function() {
+    const startNodePromises = [...Array(N_NODES)].map(_ => startNode())
+
+    testState.gethNodes = await Promise.all(startNodePromises)
+  })
+
+  afterEach('stop, thus automatically-remove, and wait till removal of geth docker containers', async function() {
+    await Promise.all(testState.gethNodes.map(gethNode => gethNode.container.stop()))
+    await Promise.all(testState.gethNodes.map(gethNode => wait({condition: 'removed'})))
+  })
+
+
+  it('.isListening() should return true since a geth started on ws://0.0.0.0:8546', async function() {
+    const shh = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethNodes[0].containerIP}:8546`)).shh
+
+    const isListening = await shh.net.isListening()
+
+    isListening.should.be.true
+  })
+
+
+  it('.isListening() should throw no provider on ws://0.0.0.0:8547', async function() {
+    const shh = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethNodes[0].containerIP}:8547`)).shh
+
+    await shh.net.isListening().should.be.rejected
+  })
+
+
+  it('should get shh version', async function() {
+    const shh = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethNodes[0].containerIP}:8546`)).shh
+
+    const shhVersion = await shh.getVersion()
+
+    // TODO: I'm now working with version 6.0. Test will need to be updated when a new version is used
+    shhVersion.should.equal('6.0')
+  })
+
+
+  it('should generate same SymKey for same password', async function() {
+    const shh = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethNodes[0].containerIP}:8546`)).shh
+
+    const pass1ID = await shh.generateSymKeyFromPassword('abc')
+    const pass2ID = await shh.generateSymKeyFromPassword('abc')
+    const symKey1 = await shh.getSymKey(pass1ID)
+    const symKey2 = await shh.getSymKey(pass2ID)
+
+    symKey1.should.equal(symKey2)
+  })
+
+
+  it('should save SymKey twice for same password', async function() {
+    const shh = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethNodes[0].containerIP}:8546`)).shh
+
+    const pass1ID = await shh.generateSymKeyFromPassword('abc')
+    const pass2ID = await shh.generateSymKeyFromPassword('abc')
+
+    pass1ID.should.not.equal(pass2ID)
+  })
+
+
+  it('should receive message with symmetric encryption', function(done) {
+    const web3 = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethNodes[0].containerIP}:8546`))
+    const shh = web3.shh
+
+    shh.generateSymKeyFromPassword('abc', (err, symKeyID) => {
+
+      shh.subscribe('messages', {symKeyID: symKeyID, topics: ['0x8a2f110d']}, (err, m, sub) => {
+        web3.utils.hexToUtf8(m.payload).should.equal('hiii')
+        done()
+      })
+
+      shh.post({symKeyID: symKeyID, topic: '0x8a2f110d', payload: web3.utils.utf8ToHex('hiii'), powTime: 2, powTarget: 0.2})
+    })
+  })
+
+
+  it('should, WITH 2 DIFFERENT GETH NODES, receive message with symmetric encryption', function(done) {
+    let nodes = [...Array(2)].map(_ => {
+      const web3 = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethNodes[0].containerIP}:8546`))
+      const shh = web3.shh
+      return { web3: web3, shh: shh}
+    })
+
+    nodes[0].shh.generateSymKeyFromPassword('abc', (err, symKeyID) => {
+
+      nodes[0].shh.subscribe('messages', {symKeyID: symKeyID, topics: ['0x8a2f110d']}, (err, m, sub) => {
+        nodes[0].web3.utils.hexToUtf8(m.payload).should.equal('hiii')
+        done()
+      })
+
+      nodes[1].shh.generateSymKeyFromPassword('abc', (err, symKeyID) => {
+        nodes[1].shh.post({symKeyID: symKeyID, topic: '0x8a2f110d', payload: nodes[0].web3.utils.utf8ToHex('hiii'), powTime: 2, powTarget: 0.2})
+      })
+    })
+  })
+
+  async function startNode() {
+
     const gethContainer = await docker.createContainer({
       Image: 'ethereum/client-go',
     // TODO: whisper doesn't need ethereum blockchain. Currently, I'm using --dev to be as lightweight as possible blockchain-wise
@@ -48,76 +151,6 @@ describe.only('shh', function() {
 
     await waitTillTrue(1000, 10, () => isTcpPortListening(ip, 8546))
 
-    testState.gethContainer = gethContainer
-    testState.gethContainerIP = ip
-  })
-
-  afterEach('stop, thus automatically-remove, and wait till removal of geth docker container', async function() {
-    await testState.gethContainer.stop()
-    await testState.gethContainer.wait({condition: 'removed'})
-  })
-
-
-  it('.isListening() should return true since geth started on ws://0.0.0.0:8546', async function() {
-    const shh = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethContainerIP}:8546`)).shh
-
-    const isListening = await shh.net.isListening()
-
-    isListening.should.be.true
-  })
-
-
-  it('.isListening() should throw no provider on ws://0.0.0.0:8547', async function() {
-    const shh = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethContainerIP}:8547`)).shh
-
-    await shh.net.isListening().should.be.rejected
-  })
-
-
-  it('should get shh version', async function() {
-    const shh = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethContainerIP}:8546`)).shh
-
-    const shhVersion = await shh.getVersion()
-
-    // TODO: I'm now working with version 6.0. Test will need to be updated when a new version is used
-    shhVersion.should.equal('6.0')
-  })
-
-
-  it('should generate same SymKey for same password', async function() {
-    const shh = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethContainerIP}:8546`)).shh
-
-    const pass1ID = await shh.generateSymKeyFromPassword('abc')
-    const pass2ID = await shh.generateSymKeyFromPassword('abc')
-    const symKey1 = await shh.getSymKey(pass1ID)
-    const symKey2 = await shh.getSymKey(pass2ID)
-
-    symKey1.should.equal(symKey2)
-  })
-
-
-  it('should save SymKey twice for same password', async function() {
-    const shh = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethContainerIP}:8546`)).shh
-
-    const pass1ID = await shh.generateSymKeyFromPassword('abc')
-    const pass2ID = await shh.generateSymKeyFromPassword('abc')
-
-    pass1ID.should.not.equal(pass2ID)
-  })
-
-
-  it('should receive message with symmetric encryption', function(done) {
-    const web3 = new Web3(new Web3.providers.WebsocketProvider(`ws://${testState.gethContainerIP}:8546`))
-    const shh = web3.shh
-
-    shh.generateSymKeyFromPassword('abc', (err, symKeyID) => {
-
-      shh.subscribe('messages', {symKeyID: symKeyID, topics: ['0x8a2f110d']}, (err, m, sub) => {
-        web3.utils.hexToUtf8(m.payload).should.equal('hiii')
-        done()
-      })
-
-      shh.post({symKeyID: symKeyID, topic: '0x8a2f110d', payload: web3.utils.utf8ToHex('hiii'), powTime: 2, powTarget: 0.2})
-    })
-  })
+    return { container: gethContainer, containerIP: ip }
+  }
 })
