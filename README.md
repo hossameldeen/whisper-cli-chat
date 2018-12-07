@@ -1,3 +1,5 @@
+**This repository has been archived. For any communication regarding it, including the possibility of unarchiving or making updates to it, feel free to open an issue on [archived-repos](https://github.com/hossameldeen/archived-repos).** I think the final state was that I couldn't get it to work somehow. But on the upside, I got accepted. Good people :))
+
 # Whisper CLI Chat
 A cli chat app built on top of Ethereum's Whisper protocol
 
